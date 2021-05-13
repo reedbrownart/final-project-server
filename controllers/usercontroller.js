@@ -1,26 +1,46 @@
 const Express = require('express');
 const router = Express.Router();
-const { UserModel } = require('../models');
+const { UserModel } = require("../models");
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { UniqueConstraintError } = require('sequelize/lib/errors');
+const validateJWT = require('../middleware/validate-session');
+
+////////////////////////////////////////////////////
+// THIS IS A TEST
+////////////////////////////////////////////////////
 
 router.get('/usertest', (req, res) => {
     res.send('you have reached the user endpoint');
 })
 
+////////////////////////////////////////////////////
+// REGISTER USER (POST)
+////////////////////////////////////////////////////
+
 router.post('/register', async (req, res) => {
 
     let { firstName, lastName, email, password } = req.body;
     try{
-        let User = await UserModel.create({
+        let newUser = await UserModel.create({
             firstName,
             lastName,
             email,
-            password
+            password: bcrypt.hashSync(password, 13)
         })
+
+        const token = jwt.sign(
+            { id: newUser.id },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: 60 * 60 * 24
+            }
+        )
         
         res.status(201).json({
             message: "User successfully registered",
-            user: User
+            user: newUser,
+            token
         })
     } catch (err) {
         if (err instanceof UniqueConstraintError) {
@@ -29,22 +49,111 @@ router.post('/register', async (req, res) => {
             })
         } else {
             res.status(500).json({
-                message: "Failed for some unknown reason"
+                message: "Failed for some unknown reason",
+                err
             })
         }
     }
 })
 
-router.post('/login', (req, res) => {
-    res.send('you have reached the login user endpoint');
+////////////////////////////////////////////////////
+// LOGIN (POST)
+////////////////////////////////////////////////////
+
+router.post('/login', async (req, res) => {
+    let { email, password } = req.body;
+    try {
+        let loginUser = await UserModel.findOne({
+            where: {
+                email
+            }
+        })
+        if (loginUser) {
+            let passwordComparison = await bcrypt.compare(password, loginUser.password); //need to add bcrypt
+
+            if (passwordComparison) {
+                const token = jwt.sign(
+                    { id: loginUser.id },
+                    process.env.JWT_SECRET,
+                    { expiresIn: 60 * 60 * 24 }
+                )
+
+                res.status(200).json({
+                    message: "User successfully logged in!",
+                    user: loginUser,
+                    token
+                })
+            } else {
+                res.status(401).json({
+                    message: "Error: password."
+                })
+            }
+        } else {
+            res.status(401).json({
+                message: "Error: username."
+            })
+        }
+    } catch (err) {
+        res.status(500).json({
+            error: `Failed to login user. ${err}`
+        })
+    }
 })
 
-router.delete('/delete/:id', (req, res) => {
-    res.send('you have reached the delete user endpoint');
+////////////////////////////////////////////////////
+// DELETE USER, REQUIRES A VALID TOKEN
+////////////////////////////////////////////////////
+
+router.delete('/delete', validateJWT, async (req, res) => {
+    const userID = req.user.id;
+
+    try {
+        const USER = await UserModel.findOne({
+            where: {
+                id: userID
+            }
+        })
+
+        const query = {
+            where: {
+                id: userID
+            }
+        };
+
+        await UserModel.destroy(query);
+
+        console.log('user destroyed?')
+
+        res.status(200).json({ message: "User Removed", user: USER.email })
+
+    } catch (err) {
+        res.status(500).json({
+            error: err
+        })
+    }
 })
 
-router.get('/:id', (req, res) => {
-    res.send('you have reached the get user endpoint (is this really necessary?)');
-})
+////////////////////////////////////////////////////
+// THIS IS PROBABLY DANGEROUS AND AN UNUSEFUL ENDPOINT
+////////////////////////////////////////////////////
+
+// router.get('/:userID', async (req, res) => {
+//     const { userID } = req.params;
+
+//     try {
+//         const USER = await UserModel.findOne({
+//             where: {
+//                 id: userID
+//             }
+//         })
+
+//         res.status(200).json({ user: USER })
+
+//     } catch (err) {
+//         res.status(500).json({
+//             error: err
+//         })
+//     }
+// })
 
 module.exports = router;
