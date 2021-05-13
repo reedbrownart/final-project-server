@@ -1,14 +1,22 @@
 const Express = require('express');
 const router = Express.Router();
-const { UserModel } = require('../models');
+const { UserModel } = require("../models");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { UniqueConstraintError } = require('sequelize/lib/errors');
-// const validateJWT = require('../middleware/validate-session');
+const validateJWT = require('../middleware/validate-session');
+
+////////////////////////////////////////////////////
+// THIS IS A TEST
+////////////////////////////////////////////////////
 
 router.get('/usertest', (req, res) => {
     res.send('you have reached the user endpoint');
 })
+
+////////////////////////////////////////////////////
+// REGISTER USER (POST)
+////////////////////////////////////////////////////
 
 router.post('/register', async (req, res) => {
 
@@ -47,6 +55,10 @@ router.post('/register', async (req, res) => {
         }
     }
 })
+
+////////////////////////////////////////////////////
+// LOGIN (POST)
+////////////////////////////////////////////////////
 
 router.post('/login', async (req, res) => {
     let { email, password } = req.body;
@@ -88,12 +100,60 @@ router.post('/login', async (req, res) => {
     }
 })
 
-router.delete('/delete/:id', (req, res) => {
-    res.send('you have reached the delete user endpoint');
+////////////////////////////////////////////////////
+// DELETE USER, REQUIRES A VALID TOKEN
+////////////////////////////////////////////////////
+
+router.delete('/delete', validateJWT, async (req, res) => {
+    const userID = req.user.id;
+
+    try {
+        const USER = await UserModel.findOne({
+            where: {
+                id: userID
+            }
+        })
+
+        const query = {
+            where: {
+                id: userID
+            }
+        };
+
+        await UserModel.destroy(query);
+
+        console.log('user destroyed?')
+
+        res.status(200).json({ message: "User Removed", user: USER.email })
+
+    } catch (err) {
+        res.status(500).json({
+            error: err
+        })
+    }
 })
 
-router.get('/:id', (req, res) => {
-    res.send('you have reached the get user endpoint (is this really necessary?)');
-})
+////////////////////////////////////////////////////
+// THIS IS PROBABLY DANGEROUS AND AN UNUSEFUL ENDPOINT
+////////////////////////////////////////////////////
+
+// router.get('/:userID', async (req, res) => {
+//     const { userID } = req.params;
+
+//     try {
+//         const USER = await UserModel.findOne({
+//             where: {
+//                 id: userID
+//             }
+//         })
+
+//         res.status(200).json({ user: USER })
+
+//     } catch (err) {
+//         res.status(500).json({
+//             error: err
+//         })
+//     }
+// })
 
 module.exports = router;
