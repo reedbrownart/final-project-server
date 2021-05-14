@@ -48,7 +48,8 @@ router.post('/create/:artID', validateJWT, async(req, res) => {
 // (stretch goal) ALLOW USER TO UPDATE DYNAMICALLY WHILE VIEWING?
 ////////////////////////////////////////////////////
 
-router.put('/update/:reviewID', async(req, res) => {
+router.put('/update/:reviewID', validateJWT, async(req, res) => {
+    const userID = req.user.id;
     const { rating, description } = req.body;
     let { reviewID } = req.params;
 
@@ -58,14 +59,23 @@ router.put('/update/:reviewID', async(req, res) => {
         }
     };
 
+    const review = await ReviewModel.findOne({
+        where: {
+            id: reviewID
+        }
+    })
+
     const newReview = {
         rating,
         description
     }
 
     try {
-        const update = await ReviewModel.update(newReview, query);
-        res.status(200).json(newReview);
+        if (userID === review.userId) {
+            const update = await ReviewModel.update(newReview, query);
+            res.status(200).json(newReview);
+        }
+        res.status(200).json({ message: 'stop trying to cover up your bad reviews!' })
     } catch (err) {
         res.status(500).json({ error: err });
     }
