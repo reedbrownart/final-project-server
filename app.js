@@ -10,6 +10,7 @@ app.use(require('./middleware/headers'));
 const controllers = require('./controllers');
 app.use("/user", controllers.userController);
 app.use('/art', controllers.artController);
+app.use('/reviews', controllers.reviewController);
 
 app.use('/test', (req, res) => {
     res.send('This is a test endpoint');
