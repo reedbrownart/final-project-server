@@ -155,7 +155,7 @@ router.get('/', async(req, res) => {
 // THIS RETURNS THE TITLES, ARTIST'S NAME, AND LINKS FOR THE 10 MOST RECENT ARTPIECES
 ////////////////////////////////////////////////////
 
-router.get('/gallery/', validateJWT, async(req, res) => {
+router.get('/gallery', validateJWT, async(req, res) => {
     const { artistID } = req.user.id;
     try {
 
