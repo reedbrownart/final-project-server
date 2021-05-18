@@ -6,6 +6,10 @@ const Art = db.define('art', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    artistName: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
     images: {
         type: DataTypes.ARRAY(DataTypes.ARRAY(DataTypes.STRING)),
         allowNull: false
