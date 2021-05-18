@@ -105,8 +105,8 @@ router.delete('/delete/:artID', async(req, res) => {
 // THIS RETURNS ALL WORKS BY AN ARTIST
 ////////////////////////////////////////////////////
 
-router.get('/gallery', validateJWT, async(req, res) => {
-    const artistID = req.user.id;
+router.get('/gallery/:artistID', async(req, res) => {
+    const { artistID } = req.params;
 
     try {
         const arts = await ArtModel.findAll({
