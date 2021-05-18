@@ -200,4 +200,33 @@ router.get('/tenreviews/:artID', async(req, res) => {
     }
 })
 
+////////////////////////////////////////////////////
+// THIS RETURNS ALL REVIEWS BY A SINGLE USER
+////////////////////////////////////////////////////
+
+router.get('/gallery/:artistID', async(req, res) => {
+    const { artistID } = req.params;
+    try {
+
+        const arts = await ReviewModel.findAll({
+            where: {
+                userId: artistID
+            },
+            order: [
+                ["createdAt", "DESC"]
+            ]
+        })
+
+        console.log('did we survive the await?');
+
+        res.status(200).json({ arts: arts })
+
+    } catch (err) {
+        res.status(500).json({
+            message: "It appears you have just dropped all of your art in a puddle, rendering it worthless.",
+            error: err
+        })
+    }
+})
+
 module.exports = router;

@@ -1,7 +1,7 @@
 const Express = require('express');
 const router = Express.Router();
 const validateJWT = require('../middleware/validate-session');
-const { ArtModel } = require('../models');
+const { ArtModel, UserModel } = require('../models');
 
 ////////////////////////////////////////////////////
 // THIS IS A TEST
@@ -15,16 +15,25 @@ router.get('/arttest', (req, res) => {
 // THIS WILL STORE ALL THE DATA FOR AN ART PIECE
 ////////////////////////////////////////////////////
 
-router.post('/create', validateJWT, async (req, res) => {
+router.post('/create', validateJWT, async(req, res) => {
     const userID = req.user.id;
-    
+
+    const user = await UserModel.findOne({
+        where: {
+            id: userID
+        }
+    })
+
     console.log(userID);
 
-    const {title, images, audio} = req.body;
+    const artistName = `${user.firstName} ${user.lastName}`
+
+    const { title, images, audio } = req.body;
 
     try {
         const newArt = await ArtModel.create({
             title,
+            artistName: artistName,
             images,
             audio,
             userId: userID
@@ -48,7 +57,7 @@ router.post('/create', validateJWT, async (req, res) => {
 ////////////////////////////////////////////////////
 
 router.put('/update/:artID', async(req, res) => {
-    const {title, images, audio} = req.body;
+    const { title, images, audio } = req.body;
     let { artID } = req.params;
 
     const query = {
@@ -75,7 +84,7 @@ router.put('/update/:artID', async(req, res) => {
 // THIS DELETES THE ART PIECE (EASY)
 ////////////////////////////////////////////////////
 
-router.delete('/delete/:artID', async (req, res) => {
+router.delete('/delete/:artID', async(req, res) => {
     let { artID } = req.params;
 
     try {
@@ -86,7 +95,7 @@ router.delete('/delete/:artID', async (req, res) => {
         };
 
         await ArtModel.destroy(query);
-        res.status(200).json({message: "art destroyed"})
+        res.status(200).json({ message: "art destroyed" })
     } catch (err) {
         res.status(500).json({ error: err });
     }
@@ -96,7 +105,7 @@ router.delete('/delete/:artID', async (req, res) => {
 // THIS GRABS THE DATA AND RETURNS IT FOR CREATING AN ART PIECE ON THE FRONT END
 ////////////////////////////////////////////////////
 
-router.get('/:artID', async (req, res) => {
+router.get('/:artID', async(req, res) => {
     const { artID } = req.params;
 
     try {
@@ -117,31 +126,52 @@ router.get('/:artID', async (req, res) => {
 })
 
 ////////////////////////////////////////////////////
-// THIS RETURNS THE TITLES, ARTIST'S NAME, AND LINKS FOR EACH ART PIECE
+// THIS RETURNS THE TITLES, ARTIST'S NAME, AND LINKS FOR THE 10 MOST RECENT ARTPIECES
 ////////////////////////////////////////////////////
 
-router.get('/', async (req, res) => {
+router.get('/', async(req, res) => {
     try {
-        // const arts = await ArtModel.findAll();
-
-        // const newestArtIndex = arts.length;
-        // const tenArtsAgo = newestArtIndex - 10;
-
-        // const returnArray = [];
-
-        // for (i = tenArtsAgo; i < newestArtIndex; i++) {
-        //     returnArray.push(arts[i])
-        // }
 
         const arts = await ArtModel.findAll({
             limit: 10,
-            order: [["createdAt", "DESC"]]
+            order: [
+                ["createdAt", "DESC"]
+            ]
         })
 
         console.log('did we survive the await?');
 
-        res.status(200).json({arts: arts})
-        
+        res.status(200).json({ arts: arts })
+
+    } catch (err) {
+        res.status(500).json({
+            message: "It appears you have just dropped all of your art in a puddle, rendering it worthless.",
+            error: err
+        })
+    }
+})
+
+////////////////////////////////////////////////////
+// THIS RETURNS THE TITLES, ARTIST'S NAME, AND LINKS FOR THE 10 MOST RECENT ARTPIECES
+////////////////////////////////////////////////////
+
+router.get('/gallery/:artistID', async(req, res) => {
+    const { artistID } = req.params;
+    try {
+
+        const arts = await ArtModel.findAll({
+            where: {
+                userId: artistID
+            },
+            order: [
+                ["createdAt", "DESC"]
+            ]
+        })
+
+        console.log('did we survive the await?');
+
+        res.status(200).json({ arts: arts })
+
     } catch (err) {
         res.status(500).json({
             message: "It appears you have just dropped all of your art in a puddle, rendering it worthless.",
