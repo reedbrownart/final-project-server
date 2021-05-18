@@ -208,7 +208,7 @@ router.get('/gallery/:artistID', async(req, res) => {
     const { artistID } = req.params;
     try {
 
-        const arts = await ReviewModel.findAll({
+        const reviews = await ReviewModel.findAll({
             where: {
                 userId: artistID
             },
@@ -219,7 +219,7 @@ router.get('/gallery/:artistID', async(req, res) => {
 
         console.log('did we survive the await?');
 
-        res.status(200).json({ arts: arts })
+        res.status(200).json({ reviews: reviews })
 
     } catch (err) {
         res.status(500).json({
