@@ -156,7 +156,7 @@ router.get('/', async(req, res) => {
 ////////////////////////////////////////////////////
 
 router.get('/gallery', validateJWT, async(req, res) => {
-    const { artistID } = req.user.id;
+    const artistID = req.user.id;
     try {
 
         const arts = await ArtModel.findAll({
